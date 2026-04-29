@@ -1,1 +1,722 @@
-<iframe src="https://claude.site/public/artifacts/37f6b546-36b1-4963-b11e-7a330dee1f7f/embed" title="MesaAI.html" width="100%" height="600" frameborder="0" allow="clipboard-write" allowfullscreen></iframe>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MesaAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Styrene+A:wght@400;500&family=Tiempos+Headline:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;1,8..60,300;1,8..60,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f4ef;
+  --surface:#ffffff;
+  --sidebar-bg:#f0ede6;
+  --border:#e3dfd8;
+  --border2:#d4cfc7;
+  --text:#1a1916;
+  --text2:#6b6760;
+  --text3:#a09c96;
+  --accent:#cf6a29;
+  --accent-light:#fdf3ec;
+  --accent-border:#f0c9a0;
+  --frofro:#7c6af5;
+  --frofro-light:#f0effe;
+  --frofro-border:#c5bef7;
+  --canvas:#2a7d6b;
+  --canvas-light:#eaf5f2;
+  --canvas-border:#9fd4c8;
+  --bubble-user:#1a1916;
+  --font:'Inter',system-ui,sans-serif;
+  --serif:'Source Serif 4',Georgia,serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:256px;min-width:256px;
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.brand{
+  padding:18px 16px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.brand-mark{
+  width:34px;height:34px;border-radius:9px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand-name{font-family:var(--serif);font-size:19px;font-weight:400;color:var(--text);letter-spacing:-.2px}
+.free-pill{
+  font-size:10px;font-weight:500;letter-spacing:.4px;
+  color:var(--accent);background:var(--accent-light);
+  border:1px solid var(--accent-border);
+  padding:2px 7px;border-radius:20px;margin-left:auto;
+}
+
+.new-btn{
+  margin:12px 12px 0;
+  padding:8px 13px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text2);
+  font-family:var(--font);font-size:13px;
+  cursor:pointer;
+  display:flex;align-items:center;gap:7px;
+  transition:all .15s;
+  width:calc(100% - 24px);
+}
+.new-btn:hover{background:var(--border);color:var(--text)}
+.new-btn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+
+.models-section{padding:14px 12px 10px;border-bottom:1px solid var(--border)}
+.slabel{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding-left:2px}
+
+.mpill{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:8px;
+  cursor:pointer;transition:all .12s;
+  border:1px solid transparent;
+  margin-bottom:3px;
+}
+.mpill:hover{background:rgba(0,0,0,.04)}
+.mpill.active{background:var(--surface);border-color:var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.mdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ds{background:var(--accent)}.df{background:var(--frofro)}.dc{background:var(--canvas)}
+.minfo{flex:1}
+.mname{font-size:13px;font-weight:500;color:var(--text);line-height:1.3}
+.mdesc{font-size:11px;color:var(--text3);line-height:1.3;margin-top:1px}
+.mbadge{
+  font-size:10px;font-weight:500;padding:2px 6px;border-radius:20px;
+  background:#eef7ee;color:#2d7a2d;border:1px solid #c3e2c3;
+}
+
+.history{flex:1;overflow-y:auto;padding:12px;scrollbar-width:none}
+.history::-webkit-scrollbar{display:none}
+.hitem{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 8px;border-radius:7px;
+  font-size:12.5px;color:var(--text3);
+  cursor:pointer;transition:all .1s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hitem:hover{background:rgba(0,0,0,.05);color:var(--text2)}
+.hitem svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;opacity:.5}
+
+.sidebar-foot{
+  padding:10px 14px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text3);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.online{display:flex;align-items:center;gap:5px}
+.ondot{width:5px;height:5px;border-radius:50%;background:#2d7a2d}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+.topbar{
+  padding:11px 24px;border-bottom:1px solid var(--border);
+  background:rgba(245,244,239,.92);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tb-left{display:flex;align-items:center;gap:9px}
+.tb-site{font-family:var(--serif);font-size:14px;color:var(--text2);font-weight:400}
+.tb-sep{color:var(--text3);font-size:12px}
+.tchip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid;
+}
+.tcs{background:var(--accent-light);color:var(--accent);border-color:var(--accent-border)}
+.tcf{background:var(--frofro-light);color:var(--frofro);border-color:var(--frofro-border)}
+.tcc{background:var(--canvas-light);color:var(--canvas);border-color:var(--canvas-border)}
+.chdot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.tb-right button{
+  width:30px;height:30px;border-radius:7px;background:transparent;
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .12s;color:var(--text3);
+}
+.tb-right button:hover{background:var(--border);color:var(--text)}
+.tb-right button svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── MESSAGES ── */
+.messages{
+  flex:1;overflow-y:auto;padding:32px 0 16px;
+  display:flex;flex-direction:column;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* WELCOME */
+.welcome{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 32px;text-align:center;animation:fadeUp .35s ease both;
+}
+.wicon{
+  width:64px;height:64px;border-radius:18px;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+  box-shadow:0 4px 24px rgba(207,106,41,.2);
+}
+.wicon svg{width:30px;height:30px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.welcome h1{
+  font-family:var(--serif);font-size:28px;font-weight:400;
+  color:var(--text);margin-bottom:9px;letter-spacing:-.3px;
+}
+.welcome p{font-size:14.5px;color:var(--text2);max-width:380px;line-height:1.7;margin-bottom:26px}
+
+.model-chips-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+
+.sugg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:480px;width:100%}
+.sugg{
+  padding:12px 14px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;
+  font-size:13px;color:var(--text2);cursor:pointer;text-align:left;
+  transition:all .14s;line-height:1.45;font-family:var(--font);
+}
+.sugg:hover{border-color:var(--accent);color:var(--text);background:var(--accent-light)}
+.sic{font-size:14px;display:block;margin-bottom:4px}
+
+/* CANVAS WELCOME */
+.canvas-welcome{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 32px;text-align:center;animation:fadeUp .35s ease both;
+}
+.canvas-welcome h2{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--text);margin-bottom:8px}
+.canvas-welcome p{font-size:14px;color:var(--text2);max-width:340px;line-height:1.65;margin-bottom:24px}
+.style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:420px;width:100%;margin-bottom:10px}
+.style-btn{
+  padding:10px 8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  font-size:12px;color:var(--text2);cursor:pointer;transition:all .13s;font-family:var(--font);
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.style-btn:hover{border-color:var(--canvas);color:var(--canvas);background:var(--canvas-light)}
+.style-btn span{font-size:18px}
+
+/* MESSAGE ROWS */
+.mrow{padding:3px 24px;display:flex;gap:12px;animation:fadeUp .2s ease both}
+.mrow.user{flex-direction:row-reverse}
+.av{width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin-top:5px}
+.av-u{background:var(--bubble-user);color:#fff}
+.av-s{background:var(--accent);color:#fff;font-family:var(--serif);font-style:italic;font-size:13px}
+.av-f{background:var(--frofro);color:#fff;font-size:10px;letter-spacing:-.3px}
+.av-c{background:var(--canvas);color:#fff;font-size:11px}
+.bubble{max-width:640px;padding:11px 15px;border-radius:12px;font-size:14px;line-height:1.75}
+.bai{
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  border-radius:3px 12px 12px 12px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.buser{
+  background:var(--bubble-user);color:#f0ede8;
+  border-radius:12px 3px 12px 12px;
+  font-size:14px;
+}
+
+/* IMAGE BUBBLES */
+.imgbubble{
+  max-width:480px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:3px 12px 12px 12px;
+  overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
+.imgbubble img{width:100%;display:block;max-height:360px;object-fit:cover}
+.img-info{padding:9px 13px;border-top:1px solid var(--border)}
+.img-info .img-label{font-size:11.5px;font-weight:500;color:var(--canvas);margin-bottom:2px}
+.img-info .img-prompt-text{font-size:12px;color:var(--text2);font-style:italic;line-height:1.45}
+
+.img-skeleton{
+  max-width:480px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:3px 12px 12px 12px;
+  overflow:hidden;
+}
+.skeleton-img{
+  width:100%;height:280px;
+  background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.5s infinite;
+}
+.skeleton-text{padding:10px 13px;display:flex;flex-direction:column;gap:5px}
+.skel-line{height:10px;border-radius:4px;background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+.skel-line.w60{width:60%}.skel-line.w80{width:80%}
+
+/* TYPING */
+.twrap{
+  max-width:640px;padding:12px 16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:3px 12px 12px 12px;
+  display:flex;align-items:center;gap:4px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.td{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:blink 1.3s ease-in-out infinite}
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+
+/* ── CANVAS PANEL ── */
+.canvas-panel{
+  flex:1;display:flex;flex-direction:column;
+  background:var(--bg);overflow:hidden;
+}
+.canvas-header{
+  padding:20px 28px 0;
+  border-bottom:1px solid var(--border);
+  background:var(--sidebar-bg);
+}
+.canvas-header h2{
+  font-family:var(--serif);font-size:18px;font-weight:400;color:var(--text);
+  margin-bottom:4px;display:flex;align-items:center;gap:9px;
+}
+.canvas-header p{font-size:13px;color:var(--text2);margin-bottom:16px}
+.style-tabs{display:flex;gap:6px;padding-bottom:0;overflow-x:auto;scrollbar-width:none}
+.style-tabs::-webkit-scrollbar{display:none}
+.stab{
+  padding:6px 14px;border-radius:8px 8px 0 0;
+  font-size:12.5px;font-weight:500;color:var(--text2);
+  cursor:pointer;border:1px solid transparent;border-bottom:none;
+  transition:all .12s;white-space:nowrap;background:transparent;font-family:var(--font);
+}
+.stab:hover{color:var(--text);background:rgba(0,0,0,.04)}
+.stab.active{background:var(--bg);border-color:var(--border);color:var(--canvas);border-bottom:1px solid var(--bg);margin-bottom:-1px;position:relative;z-index:2}
+
+.canvas-body{flex:1;overflow-y:auto;padding:24px 28px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.canvas-body::-webkit-scrollbar{width:4px}
+.canvas-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.canvas-prompt-area{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:12px;
+  padding:14px 16px;margin-bottom:14px;
+  transition:border-color .2s;
+}
+.canvas-prompt-area:focus-within{border-color:var(--canvas)}
+.canvas-prompt-area textarea{
+  width:100%;border:none;outline:none;resize:none;
+  font-family:var(--serif);font-size:15px;font-style:italic;color:var(--text);
+  background:transparent;line-height:1.6;max-height:120px;overflow-y:auto;
+}
+.canvas-prompt-area textarea::placeholder{color:var(--text3);font-style:italic}
+
+.canvas-controls{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:10px}
+.size-btns{display:flex;gap:5px}
+.sbtn{
+  padding:4px 10px;border-radius:6px;font-size:11.5px;font-weight:500;
+  cursor:pointer;border:1px solid var(--border);color:var(--text2);background:transparent;
+  transition:all .12s;font-family:var(--font);
+}
+.sbtn:hover{border-color:var(--canvas);color:var(--canvas)}
+.sbtn.active{background:var(--canvas-light);border-color:var(--canvas-border);color:var(--canvas)}
+.gen-btn{
+  padding:7px 20px;background:var(--canvas);border:none;border-radius:8px;
+  color:#fff;font-family:var(--font);font-size:13px;font-weight:500;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;
+}
+.gen-btn:hover{background:#236b5a;box-shadow:0 2px 12px rgba(42,125,107,.25)}
+.gen-btn:active{transform:scale(.98)}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed}
+.gen-btn svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.canvas-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:4px}
+.gal-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;cursor:pointer;transition:all .15s;
+}
+.gal-item:hover{border-color:var(--canvas);box-shadow:0 2px 12px rgba(42,125,107,.12)}
+.gal-item img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.gal-item .gal-caption{padding:8px 10px;font-size:11.5px;color:var(--text2);line-height:1.4;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-skeleton{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+}
+.gal-sk-img{width:100%;aspect-ratio:4/3;background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+.gal-sk-txt{padding:8px 10px;height:28px;background:linear-gradient(90deg,var(--bg) 25%,var(--border) 50%,var(--bg) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite}
+
+/* ── INPUT ── */
+.input-area{padding:12px 24px 16px;background:var(--bg);border-top:1px solid var(--border)}
+.input-box{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:14px;
+  display:flex;align-items:flex-end;gap:8px;padding:9px 10px 9px 16px;
+  transition:all .18s;box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.input-box:focus-within{border-color:rgba(207,106,41,.4);box-shadow:0 0 0 3px rgba(207,106,41,.07)}
+#chat-input{
+  flex:1;border:none;outline:none;resize:none;
+  font-family:var(--font);font-size:14px;color:var(--text);
+  background:transparent;line-height:1.6;max-height:150px;overflow-y:auto;padding:2px 0;
+}
+#chat-input::placeholder{color:var(--text3)}
+.send-btn{
+  width:34px;height:34px;border-radius:9px;background:var(--accent);border:none;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .14s;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(207,106,41,.25);
+}
+.send-btn:hover{background:#b85d22;box-shadow:0 2px 12px rgba(207,106,41,.35)}
+.send-btn:active{transform:scale(.95)}
+.send-btn svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.input-foot{display:flex;justify-content:space-between;padding:6px 4px 0;font-size:11px;color:var(--text3)}
+.kbd{display:inline-block;padding:1px 5px;background:var(--sidebar-bg);border:1px solid var(--border);border-radius:3px;font-size:10px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="brand-name">MesaAI</span>
+    <span class="free-pill">FREE</span>
+  </div>
+
+  <button class="new-btn" onclick="newChat()">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New conversation
+  </button>
+
+  <div class="models-section">
+    <div class="slabel">Model</div>
+    <div class="mpill active" id="pill-sonnet" onclick="selectModel('sonnet')">
+      <div class="mdot ds"></div>
+      <div class="minfo">
+        <div class="mname">Sonnet</div>
+        <div class="mdesc">Balanced · Thoughtful</div>
+      </div>
+      <span class="mbadge">Free</span>
+    </div>
+    <div class="mpill" id="pill-frofro" onclick="selectModel('frofro')">
+      <div class="mdot df"></div>
+      <div class="minfo">
+        <div class="mname">FroFro</div>
+        <div class="mdesc">New model · Creative</div>
+      </div>
+      <span class="mbadge">Free</span>
+    </div>
+    <div class="mpill" id="pill-canvas" onclick="selectModel('canvas')">
+      <div class="mdot dc"></div>
+      <div class="minfo">
+        <div class="mname">Canvas</div>
+        <div class="mdesc">Image generation</div>
+      </div>
+      <span class="mbadge">Free</span>
+    </div>
+  </div>
+
+  <div class="history">
+    <div class="slabel">Recent</div>
+    <div class="hitem"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>How does quantum computing work?</div>
+    <div class="hitem"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Write me a short story about the sea</div>
+    <div class="hitem"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Misty forest at golden hour</div>
+    <div class="hitem"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Help me draft a proposal</div>
+  </div>
+
+  <div class="sidebar-foot">
+    <span class="online"><span class="ondot"></span>All systems go</span>
+    <span>v3.0</span>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="tb-left">
+      <span class="tb-site">MesaAI</span>
+      <span class="tb-sep">/</span>
+      <div class="tchip tcs" id="top-chip"><span class="chdot"></span><span id="top-chip-name">Sonnet</span></div>
+    </div>
+    <div class="tb-right">
+      <button onclick="newChat()" title="Clear">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div id="chat-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="wicon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <h1>How can I help you?</h1>
+        <p>Choose a model from the sidebar, then ask anything — or pick a suggestion to get started.</p>
+        <div class="model-chips-row">
+          <div class="tchip tcs"><span class="chdot"></span>Sonnet · Chat</div>
+          <div class="tchip tcf"><span class="chdot"></span>FroFro · Creative</div>
+          <div class="tchip tcc" onclick="selectModel('canvas')" style="cursor:pointer"><span class="chdot"></span>Canvas · Images ↗</div>
+        </div>
+        <div class="sugg-grid">
+          <button class="sugg" onclick="useSugg(this,'sonnet')"><span class="sic">💡</span>Explain a complex topic simply</button>
+          <button class="sugg" onclick="useSugg(this,'sonnet')"><span class="sic">✍️</span>Help me write or edit something</button>
+          <button class="sugg" onclick="useSugg(this,'frofro')"><span class="sic">✨</span>Write me a vivid short story</button>
+          <button class="sugg" onclick="useSugg(this,'frofro')"><span class="sic">🎭</span>Give me a creative poem</button>
+        </div>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-box">
+        <textarea id="chat-input" rows="1" placeholder="Message MesaAI…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="input-foot">
+        <span id="model-hint">Sonnet · Balanced chat and analysis</span>
+        <span><kbd class="kbd">↵</kbd> send &nbsp;<kbd class="kbd">⇧↵</kbd> new line</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANVAS VIEW -->
+  <div id="canvas-view" class="canvas-panel" style="display:none">
+    <div class="canvas-header">
+      <h2>
+        <svg style="width:18px;height:18px;fill:none;stroke:var(--canvas);stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Canvas — Image Generation
+      </h2>
+      <p>Describe what you'd like to see. Canvas generates images from your words.</p>
+      <div class="style-tabs">
+        <button class="stab active" data-style="">No style</button>
+        <button class="stab" data-style="photorealistic, professional photography, 8k">Photorealistic</button>
+        <button class="stab" data-style="digital art, vibrant colors, artstation">Digital Art</button>
+        <button class="stab" data-style="oil painting, impressionist, brushstrokes, canvas texture">Oil Painting</button>
+        <button class="stab" data-style="anime, manga style, Studio Ghibli inspired">Anime</button>
+        <button class="stab" data-style="cinematic, film grain, dramatic lighting, movie still">Cinematic</button>
+        <button class="stab" data-style="watercolor, soft edges, paper texture">Watercolor</button>
+        <button class="stab" data-style="pencil sketch, hand drawn, detailed linework">Sketch</button>
+      </div>
+    </div>
+
+    <div class="canvas-body">
+      <div class="canvas-prompt-area">
+        <textarea id="canvas-input" rows="2" placeholder="Describe your image… e.g. "A misty mountain lake at dawn with pine trees reflected in still water"" style="width:100%;border:none;outline:none;resize:none;font-family:var(--serif);font-size:15px;font-style:italic;color:var(--text);background:transparent;line-height:1.6;max-height:120px;overflow-y:auto"></textarea>
+        <div class="canvas-controls">
+          <div class="size-btns">
+            <button class="sbtn active" data-w="1024" data-h="768" onclick="setSize(this)">Landscape</button>
+            <button class="sbtn" data-w="768" data-h="1024" onclick="setSize(this)">Portrait</button>
+            <button class="sbtn" data-w="1024" data-h="1024" onclick="setSize(this)">Square</button>
+          </div>
+          <button class="gen-btn" id="gen-btn" onclick="generateImage()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Generate
+          </button>
+        </div>
+      </div>
+      <div class="canvas-gallery" id="canvas-gallery">
+        <!-- images appear here -->
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+let currentModel='sonnet', chatHistory=[];
+let canvasW=1024, canvasH=768, canvasStyle='';
+
+const MODELS={
+  sonnet:{
+    name:'Sonnet',chip:'tcs',hint:'Sonnet · Balanced chat and analysis',
+    sys:'You are Sonnet, MesaAI\'s flagship conversational model. You are thoughtful, warm, intellectually curious, and genuinely helpful — similar in feel to Claude. Respond clearly and helpfully. Use markdown formatting when it genuinely helps. You are completely free to use.'
+  },
+  frofro:{
+    name:'FroFro',chip:'tcf',hint:'FroFro · New model, creative and expressive',
+    sys:'You are FroFro, a brand-new AI model available on MesaAI. You have a distinct personality: imaginative, playful, and deeply creative. You love vivid language, unexpected angles, and making people smile while still being genuinely helpful. You are your own model — not based on any other AI. You are completely free to use.'
+  }
+};
+
+function selectModel(m){
+  currentModel=m;
+  ['sonnet','frofro','canvas'].forEach(x=>document.getElementById('pill-'+x).classList.toggle('active',x===m));
+  const chip=document.getElementById('top-chip');
+
+  if(m==='canvas'){
+    document.getElementById('chat-view').style.display='none';
+    document.getElementById('canvas-view').style.display='flex';
+    chip.className='tchip tcc';
+    document.getElementById('top-chip-name').textContent='Canvas';
+  } else {
+    document.getElementById('canvas-view').style.display='none';
+    document.getElementById('chat-view').style.display='flex';
+    chip.className='tchip '+MODELS[m].chip;
+    document.getElementById('top-chip-name').textContent=MODELS[m].name;
+    document.getElementById('model-hint').textContent=MODELS[m].hint;
+    document.getElementById('chat-input').placeholder='Message MesaAI…';
+  }
+}
+
+function newChat(){
+  chatHistory=[];
+  document.getElementById('messages').innerHTML=`<div class="welcome" id="welcome">
+    <div class="wicon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <h1>How can I help you?</h1>
+    <p>Choose a model from the sidebar, then ask anything — or pick a suggestion to get started.</p>
+    <div class="model-chips-row">
+      <div class="tchip tcs"><span class="chdot"></span>Sonnet · Chat</div>
+      <div class="tchip tcf"><span class="chdot"></span>FroFro · Creative</div>
+      <div class="tchip tcc" onclick="selectModel('canvas')" style="cursor:pointer"><span class="chdot"></span>Canvas · Images ↗</div>
+    </div>
+    <div class="sugg-grid">
+      <button class="sugg" onclick="useSugg(this,'sonnet')"><span class="sic">💡</span>Explain a complex topic simply</button>
+      <button class="sugg" onclick="useSugg(this,'sonnet')"><span class="sic">✍️</span>Help me write or edit something</button>
+      <button class="sugg" onclick="useSugg(this,'frofro')"><span class="sic">✨</span>Write me a vivid short story</button>
+      <button class="sugg" onclick="useSugg(this,'frofro')"><span class="sic">🎭</span>Give me a creative poem</button>
+    </div>
+  </div>`;
+  if(currentModel!=='canvas'){
+    document.getElementById('canvas-view').style.display='none';
+    document.getElementById('chat-view').style.display='flex';
+  }
+}
+
+function useSugg(el,m){
+  if(m)selectModel(m);
+  const ic=el.querySelector('.sic');
+  document.getElementById('chat-input').value=ic?el.textContent.replace(ic.textContent,'').trim():el.textContent.trim();
+  sendMessage();
+}
+
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,150)+'px';}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(s){
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--sidebar-bg);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:monospace">$1</code>')
+    .replace(/\n\n/g,'</p><p style="margin-top:10px">')
+    .replace(/\n/g,'<br>');
+}
+
+function rmWelcome(){const w=document.getElementById('welcome');if(w)w.remove();}
+
+function avHtml(m){
+  if(m==='sonnet')return'<div class="av av-s">S</div>';
+  if(m==='frofro')return'<div class="av av-f">FF</div>';
+  return'<div class="av av-c">✦</div>';
+}
+
+function addUserMsg(t){
+  rmWelcome();
+  const ms=document.getElementById('messages');
+  const r=document.createElement('div');r.className='mrow user';
+  r.innerHTML=`<div class="av av-u">You</div><div class="bubble buser">${esc(t)}</div>`;
+  ms.appendChild(r);ms.scrollTop=ms.scrollHeight;
+}
+
+function addTyping(m){
+  rmWelcome();
+  const ms=document.getElementById('messages');
+  const r=document.createElement('div');r.className='mrow';r.id='typing-row';
+  r.innerHTML=avHtml(m)+`<div class="twrap"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+  ms.appendChild(r);ms.scrollTop=ms.scrollHeight;
+}
+function rmTyping(){const t=document.getElementById('typing-row');if(t)t.remove();}
+
+function addAIMsg(t,m){
+  const ms=document.getElementById('messages');
+  const r=document.createElement('div');r.className='mrow';
+  r.innerHTML=avHtml(m)+`<div class="bubble bai"><p>${fmt(t)}</p></div>`;
+  ms.appendChild(r);ms.scrollTop=ms.scrollHeight;
+}
+
+async function sendMessage(){
+  if(currentModel==='canvas')return;
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();if(!text)return;
+  input.value='';input.style.height='auto';
+  addUserMsg(text);
+  chatHistory.push({role:'user',content:text});
+  addTyping(currentModel);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:MODELS[currentModel].sys,
+        messages:chatHistory
+      })
+    });
+    const data=await res.json();
+    rmTyping();
+    const reply=data.content?.map(b=>b.text||'').join('\n').trim()||'Something went wrong.';
+    chatHistory.push({role:'assistant',content:reply});
+    addAIMsg(reply,currentModel);
+  }catch(e){
+    rmTyping();
+    addAIMsg('Something went wrong — please try again.',currentModel);
+  }
+}
+
+/* ── CANVAS ── */
+function setSize(btn){
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  canvasW=parseInt(btn.dataset.w);canvasH=parseInt(btn.dataset.h);
+}
+
+document.querySelectorAll('.stab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    canvasStyle=tab.dataset.style||'';
+  });
+});
+
+async function generateImage(){
+  const input=document.getElementById('canvas-input');
+  const prompt=input.value.trim();
+  if(!prompt)return;
+
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true;btn.innerHTML='<svg style="width:14px;height:14px;animation:spin .8s linear infinite" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Generating…';
+
+  // Build the full prompt with style
+  let fullPrompt=prompt;
+  if(canvasStyle)fullPrompt=prompt+', '+canvasStyle;
+
+  // Use Pollinations AI — free, no key, works directly in browser
+  const seed=Math.floor(Math.random()*999999);
+  const encoded=encodeURIComponent(fullPrompt);
+  const imgUrl=`https://image.pollinations.ai/prompt/${encoded}?width=${canvasW}&height=${canvasH}&seed=${seed}&nologo=true`;
+
+  // Add skeleton
+  const gallery=document.getElementById('canvas-gallery');
+  const skeleton=document.createElement('div');
+  skeleton.className='gal-skeleton';skeleton.id='current-skeleton';
+  skeleton.innerHTML=`<div class="gal-sk-img"></div><div class="gal-sk-txt"></div>`;
+  gallery.insertBefore(skeleton,gallery.firstChild);
+
+  // Pre-load the image before showing
+  const img=new Image();
+  img.onload=()=>{
+    // Replace skeleton with real image
+    const item=document.createElement('div');
+    item.className='gal-item';
+    const shortPrompt=prompt.length>60?prompt.slice(0,60)+'…':prompt;
+    item.innerHTML=`<img src="${imgUrl}" alt="${esc(prompt)}"/><div class="gal-caption">${esc(shortPrompt)}</div>`;
+    item.onclick=()=>window.open(imgUrl,'_blank');
+    skeleton.replaceWith(item);
+    btn.disabled=false;
+    btn.innerHTML='<svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate';
+  };
+  img.onerror=()=>{
+    skeleton.innerHTML=`<div style="padding:20px;font-size:13px;color:var(--text2);text-align:center">Image failed to load.<br>Try a different prompt.</div>`;
+    btn.disabled=false;
+    btn.innerHTML='<svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate';
+  };
+  img.src=imgUrl;
+}
+</script>
+</body>
+</html>
