@@ -1,611 +1,323 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MesaAI</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siri-Style Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-:root {
-  --bg: #f7f5f2;
-  --sidebar: #efece6;
-  --surface: #ffffff;
-  --border: #e5e0d8;
-  --border2: #d6d0c7;
-  --text: #1c1916;
-  --text2: #6b6760;
-  --text3: #a09c96;
-  --accent: #c96a2e;
-  --accent-hover: #b05c24;
-  --accent-soft: #fdf3ec;
-  --accent-border: #f0c9a0;
-  --user-bubble: #1c1916;
-  --font: 'Inter', system-ui, sans-serif;
-  --serif: 'Source Serif 4', Georgia, serif;
-  --radius: 12px;
-  --shadow: 0 1px 4px rgba(0,0,0,.07);
-}
+        /* Siri Waveform Animation */
+        .orb-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-html, body { height: 100%; overflow: hidden; }
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  font-size: 14px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
+        .orb {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5, #00d2ff);
+            filter: blur(40px);
+            opacity: 0.6;
+            transition: all 0.5s ease;
+        }
 
-/* ── SIDEBAR ── */
-.sidebar {
-  width: 248px;
-  min-width: 248px;
-  background: var(--sidebar);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-}
+        .listening .orb {
+            animation: pulse 1.5s infinite ease-in-out;
+            opacity: 0.9;
+            filter: blur(20px);
+            width: 180px;
+            height: 180px;
+        }
 
-.brand {
-  padding: 18px 16px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+        @keyframes pulse {
+            0% { transform: scale(1); background: #00d2ff; }
+            50% { transform: scale(1.2); background: #9d50bb; }
+            100% { transform: scale(1); background: #6e48aa; }
+        }
 
-.brand-mark {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.brand-mark svg {
-  width: 17px; height: 17px;
-  fill: none; stroke: #fff;
-  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-}
-.brand-name {
-  font-family: var(--serif);
-  font-size: 18px; font-weight: 400;
-  color: var(--text); letter-spacing: -.2px;
-}
-.brand-free {
-  margin-left: auto;
-  font-size: 9.5px; font-weight: 600; letter-spacing: .5px;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  padding: 2px 7px; border-radius: 20px;
-}
+        .visualizer {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 60px;
+            margin-top: 20px;
+        }
 
-.new-btn {
-  margin: 12px 12px 0;
-  padding: 8px 13px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text2);
-  font-family: var(--font); font-size: 13px;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 7px;
-  transition: all .13s;
-  width: calc(100% - 24px);
-}
-.new-btn:hover { background: var(--border); color: var(--text); }
-.new-btn svg {
-  width: 13px; height: 13px;
-  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
-}
+        .bar {
+            width: 4px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
 
-.model-info {
-  margin: 14px 12px 0;
-  padding: 10px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  display: flex; align-items: center; gap: 9px;
-}
-.model-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-.model-text { flex: 1; }
-.model-text-name { font-size: 13px; font-weight: 500; color: var(--text); }
-.model-text-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.model-free-badge {
-  font-size: 9.5px; font-weight: 500; padding: 2px 6px; border-radius: 20px;
-  background: #eef7ee; color: #2a6e2a; border: 1px solid #c3e0c3;
-}
+        .listening .bar {
+            background: #fff;
+            animation: bounce 0.5s infinite alternate;
+        }
 
-.history {
-  flex: 1; overflow-y: auto; padding: 14px 12px;
-  scrollbar-width: none;
-}
-.history::-webkit-scrollbar { display: none; }
-.hlabel {
-  font-size: 10px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
-  color: var(--text3); margin-bottom: 8px; padding-left: 2px;
-}
-.hitem {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 8px; border-radius: 7px;
-  font-size: 12.5px; color: var(--text3);
-  cursor: pointer; transition: all .1s;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.hitem:hover { background: rgba(0,0,0,.05); color: var(--text2); }
-.hitem svg {
-  width: 12px; height: 12px; fill: none; stroke: currentColor;
-  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-  flex-shrink: 0; opacity: .5;
-}
+        @keyframes bounce {
+            from { height: 10px; }
+            to { height: 40px; }
+        }
 
-.sidebar-foot {
-  padding: 10px 14px; border-top: 1px solid var(--border);
-  font-size: 11px; color: var(--text3);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.online { display: flex; align-items: center; gap: 5px; }
-.ondot { width: 5px; height: 5px; border-radius: 50%; background: #2a8a2a; }
+        .status-text {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-top: 2rem;
+            text-align: center;
+            min-height: 3rem;
+            max-width: 80%;
+        }
 
-/* ── MAIN ── */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .transcript {
+            color: rgba(255,255,255,0.5);
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
 
-.topbar {
-  padding: 11px 24px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(247,245,242,.92);
-  backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.topbar-left { display: flex; align-items: center; gap: 9px; font-size: 14px; }
-.topbar-wordmark { font-family: var(--serif); color: var(--text2); font-weight: 400; }
-.topbar-sep { color: var(--text3); }
-.topbar-model { font-size: 13px; font-weight: 500; color: var(--text); }
-.topbar-right button {
-  width: 30px; height: 30px; border-radius: 7px;
-  background: transparent; border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all .12s; color: var(--text3);
-}
-.topbar-right button:hover { background: var(--border); color: var(--text); }
-.topbar-right button svg {
-  width: 13px; height: 13px;
-  fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-}
+        .btn-assist {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px 24px;
+            border-radius: 999px;
+            margin-top: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s;
+            user-select: none;
+            font-weight: 500;
+        }
 
-/* ── MESSAGES ── */
-.messages {
-  flex: 1; overflow-y: auto; padding: 32px 0 16px;
-  display: flex; flex-direction: column;
-  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
-}
-.messages::-webkit-scrollbar { width: 4px; }
-.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-/* WELCOME */
-.welcome {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 40px 32px; text-align: center;
-  animation: fadeUp .35s ease both;
-}
-.welcome-icon {
-  width: 60px; height: 60px; border-radius: 16px;
-  background: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 20px;
-  box-shadow: 0 4px 20px rgba(201,106,46,.2);
-}
-.welcome-icon svg {
-  width: 28px; height: 28px; fill: none; stroke: #fff;
-  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-}
-.welcome h1 {
-  font-family: var(--serif);
-  font-size: 27px; font-weight: 400;
-  color: var(--text); margin-bottom: 9px; letter-spacing: -.3px;
-}
-.welcome p {
-  font-size: 14.5px; color: var(--text2);
-  max-width: 360px; line-height: 1.7; margin-bottom: 28px;
-}
-.sugg-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; max-width: 460px; width: 100%;
-}
-.sugg {
-  padding: 12px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 13px; color: var(--text2);
-  cursor: pointer; text-align: left;
-  transition: all .13s; line-height: 1.45;
-  font-family: var(--font);
-}
-.sugg:hover { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
-.sugg-ic { font-size: 14px; display: block; margin-bottom: 4px; }
-
-/* MESSAGE ROWS */
-.mrow {
-  padding: 3px 24px;
-  display: flex; gap: 12px;
-  animation: fadeUp .2s ease both;
-}
-.mrow.user { flex-direction: row-reverse; }
-
-.av {
-  width: 28px; height: 28px; border-radius: 7px;
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 10.5px; font-weight: 600; margin-top: 5px;
-}
-.av-user { background: var(--user-bubble); color: #fff; }
-.av-ai {
-  background: var(--accent); color: #fff;
-  font-family: var(--serif); font-style: italic; font-size: 13px;
-}
-
-.bubble {
-  max-width: 620px;
-  padding: 11px 15px;
-  border-radius: 12px;
-  font-size: 14px; line-height: 1.78;
-}
-.bubble-ai {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 3px 12px 12px 12px;
-  box-shadow: var(--shadow);
-}
-.bubble-user {
-  background: var(--user-bubble);
-  color: #f0ede8;
-  border-radius: 12px 3px 12px 12px;
-}
-
-/* TYPING */
-.typing-bubble {
-  max-width: 620px;
-  padding: 13px 17px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 3px 12px 12px 12px;
-  display: flex; align-items: center; gap: 5px;
-  box-shadow: var(--shadow);
-}
-.td {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--text3);
-  animation: blink 1.3s ease-in-out infinite;
-}
-.td:nth-child(2) { animation-delay: .2s; }
-.td:nth-child(3) { animation-delay: .4s; }
-
-/* ── INPUT ── */
-.input-area {
-  padding: 12px 24px 16px;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-}
-.input-box {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  display: flex; align-items: flex-end; gap: 8px;
-  padding: 9px 10px 9px 16px;
-  transition: all .17s;
-  box-shadow: var(--shadow);
-}
-.input-box:focus-within {
-  border-color: rgba(201,106,46,.4);
-  box-shadow: 0 0 0 3px rgba(201,106,46,.08);
-}
-#chat-input {
-  flex: 1; border: none; outline: none; resize: none;
-  font-family: var(--font); font-size: 14px;
-  color: var(--text); background: transparent;
-  line-height: 1.6; max-height: 150px; overflow-y: auto;
-  padding: 2px 0;
-}
-#chat-input::placeholder { color: var(--text3); }
-.send-btn {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: var(--accent); border: none;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all .13s; flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(201,106,46,.25);
-}
-.send-btn:hover { background: var(--accent-hover); box-shadow: 0 2px 12px rgba(201,106,46,.35); }
-.send-btn:active { transform: scale(.95); }
-.send-btn svg {
-  width: 14px; height: 14px;
-  fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
-}
-.input-foot {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 7px 4px 0; font-size: 11px; color: var(--text3);
-}
-.kbd {
-  display: inline-block; padding: 1px 5px;
-  background: var(--sidebar); border: 1px solid var(--border);
-  border-radius: 3px; font-size: 10px; color: var(--text3);
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes blink {
-  0%, 80%, 100% { opacity: .2; }
-  40% { opacity: 1; }
-}
-</style>
+        .btn-assist:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .btn-assist:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="brand">
-    <div class="brand-mark">
-      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    <div class="orb-container" id="visualizer-container">
+        <div class="orb"></div>
+        <div class="visualizer" id="bars">
+            <!-- Bars generated by JS -->
+        </div>
     </div>
-    <span class="brand-name">MesaAI</span>
-    <span class="brand-free">FREE</span>
-  </div>
 
-  <button class="new-btn" onclick="newChat()">
-    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    New conversation
-  </button>
+    <div class="status-text" id="status">Tap to start</div>
+    <div class="transcript" id="transcript">I'm ready to listen.</div>
 
-  <div class="model-info" style="cursor:default">
-    <div class="model-dot"></div>
-    <div class="model-text">
-      <div class="model-text-name">Sonnet</div>
-      <div class="model-text-sub">MesaAI's primary model</div>
+    <button class="btn-assist" id="start-btn">
+        Start Listening
+    </button>
+
+    <div class="mt-8 text-xs text-gray-500 uppercase tracking-widest flex flex-wrap justify-center gap-4 px-4">
+        <span>"Time"</span>
+        <span>"Date"</span>
+        <span>"Weather"</span>
+        <span>"Joke"</span>
+        <span>"Compliment"</span>
     </div>
-    <span class="model-free-badge">Free</span>
-  </div>
 
-  <div class="history">
-    <div class="hlabel">Recent</div>
-    <div class="hitem">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      How does quantum computing work?
-    </div>
-    <div class="hitem">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Help me write a cover letter
-    </div>
-    <div class="hitem">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Explain machine learning simply
-    </div>
-    <div class="hitem">
-      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-      Debug my Python script
-    </div>
-  </div>
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('status');
+        const transcriptText = document.getElementById('transcript');
+        const container = document.getElementById('visualizer-container');
+        const barsContainer = document.getElementById('bars');
 
-  <div class="sidebar-foot">
-    <span class="online"><span class="ondot"></span>Online</span>
-    <span>MesaAI v4</span>
-  </div>
-</aside>
+        let isListening = false;
+        let preferredVoice = null;
+        let hasUnlockedAudio = false;
 
-<!-- MAIN -->
-<main class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <span class="topbar-wordmark">MesaAI</span>
-      <span class="topbar-sep">/</span>
-      <span class="topbar-model">Sonnet</span>
-    </div>
-    <div class="topbar-right">
-      <button onclick="newChat()" title="New chat">
-        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-      </button>
-    </div>
-  </div>
+        for(let i=0; i<15; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.animationDelay = `${i * 0.05}s`;
+            barsContainer.appendChild(bar);
+        }
 
-  <div class="messages" id="messages">
-    <div class="welcome" id="welcome">
-      <div class="welcome-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
-      <h1>How can I help you?</h1>
-      <p>Ask me anything — I'm MesaAI's Sonnet model, here to think, write, and problem-solve with you.</p>
-      <div class="sugg-grid">
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">💡</span>Explain something complex simply</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">✍️</span>Help me write or edit a document</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">🐛</span>Debug or review my code</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">🧠</span>Brainstorm ideas with me</button>
-      </div>
-    </div>
-  </div>
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const synth = window.speechSynthesis;
 
-  <div class="input-area">
-    <div class="input-box">
-      <textarea
-        id="chat-input"
-        rows="1"
-        placeholder="Message MesaAI…"
-        onkeydown="handleKey(event)"
-        oninput="autoResize(this)"
-      ></textarea>
-      <button class="send-btn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
-    </div>
-    <div class="input-foot">
-      <span>Sonnet · Free to use</span>
-      <span><kbd class="kbd">↵</kbd> send &nbsp;<kbd class="kbd">⇧↵</kbd> new line</span>
-    </div>
-  </div>
-</main>
+        function loadVoices() {
+            const voices = synth.getVoices();
+            // Look for high quality English voices
+            preferredVoice = voices.find(v => 
+                v.name.includes('Samantha') || 
+                v.name.includes('Google UK English Female') || 
+                (v.lang.startsWith('en') && v.name.includes('Female'))
+            );
+            if (!preferredVoice && voices.length > 0) preferredVoice = voices[0];
+        }
 
-<script>
-let chatHistory = [];
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
+        loadVoices();
 
-const SYSTEM = `You are Sonnet, the primary AI model powering MesaAI — a free, thoughtful AI assistant. You are warm, intellectually curious, clear, and genuinely helpful. You enjoy engaging with ideas at any depth. When formatting helps (lists, code blocks, headers), use it — but keep things conversational when that suits better. You are completely free to use and have no restrictions on topics you can discuss helpfully.`;
+        if (!SpeechRecognition) {
+            statusText.innerText = "Speech Recognition not supported.";
+            startBtn.style.display = "none";
+        }
 
-function newChat() {
-  chatHistory = [];
-  document.getElementById('messages').innerHTML = `
-    <div class="welcome" id="welcome">
-      <div class="welcome-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
-      <h1>How can I help you?</h1>
-      <p>Ask me anything — I'm MesaAI's Sonnet model, here to think, write, and problem-solve with you.</p>
-      <div class="sugg-grid">
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">💡</span>Explain something complex simply</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">✍️</span>Help me write or edit a document</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">🐛</span>Debug or review my code</button>
-        <button class="sugg" onclick="useSugg(this)"><span class="sugg-ic">🧠</span>Brainstorm ideas with me</button>
-      </div>
-    </div>`;
-}
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.continuous = false;
 
-function useSugg(el) {
-  const ic = el.querySelector('.sugg-ic');
-  document.getElementById('chat-input').value = ic
-    ? el.textContent.replace(ic.textContent, '').trim()
-    : el.textContent.trim();
-  sendMessage();
-}
+        const responses = {
+            "hello": "Hi there! I am your personal voice assistant. How can I help you today?",
+            "hi": "Hello! I'm here and ready to help.",
+            "time": () => `The current time is ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`,
+            "date": () => `Today is ${new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`,
+            "joke": [
+                "Why was the computer cold? It left its Windows open!",
+                "What do you call a snowman with a six pack? An abdominal snowman!",
+                "Why did the math book look sad? Because it had too many problems."
+            ],
+            "weather": "I can't check the sky from inside this code, but I hope it's nice outside!",
+            "compliment": "You have an amazing mind and great curiosity!",
+            "who are you": "I am a simple voice interface built with HTML and JavaScript.",
+            "bye": "Goodbye! See you later."
+        };
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-}
+        function getResponse(text) {
+            text = text.toLowerCase();
+            for (let key in responses) {
+                if (text.includes(key)) {
+                    const val = responses[key];
+                    if (typeof val === 'function') return val();
+                    if (Array.isArray(val)) return val[Math.floor(Math.random() * val.length)];
+                    return val;
+                }
+            }
+            return "I'm sorry, I don't know that one. Try asking for the time or a joke.";
+        }
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 150) + 'px';
-}
+        function speak(text) {
+            // Cancel and Resume are key to clearing stalled speech queues in many browsers
+            synth.cancel();
+            synth.resume();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Using system defaults for pitch/rate can sometimes fix "isTrusted" errors
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+            
+            utterance.onstart = () => {
+                container.classList.add('listening');
+                statusText.innerText = text;
+                startBtn.disabled = true;
+                startBtn.innerText = "Speaking...";
+            };
+            
+            utterance.onend = () => {
+                container.classList.remove('listening');
+                statusText.innerText = "Tap to start";
+                startBtn.disabled = false;
+                startBtn.innerText = "Start Listening";
+            };
 
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+            utterance.onerror = (event) => {
+                console.error("SpeechSynthesis error:", event);
+                container.classList.remove('listening');
+                statusText.innerText = "Tap to start";
+                startBtn.disabled = false;
+                startBtn.innerText = "Start Listening";
+            };
 
-function renderMarkdown(raw) {
-  let s = esc(raw);
-  // Code blocks
-  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
-    `<pre style="background:var(--sidebar);border:1px solid var(--border);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:8px 0;font-size:13px"><code>${code.trim()}</code></pre>`
-  );
-  // Inline code
-  s = s.replace(/`([^`]+)`/g, '<code style="background:var(--sidebar);padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:monospace">$1</code>');
-  // Bold
-  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Italic
-  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  // Headers
-  s = s.replace(/^### (.+)$/gm, '<h3 style="font-family:var(--serif);font-size:15px;font-weight:500;margin:12px 0 4px">$1</h3>');
-  s = s.replace(/^## (.+)$/gm, '<h2 style="font-family:var(--serif);font-size:17px;font-weight:500;margin:14px 0 5px">$1</h2>');
-  s = s.replace(/^# (.+)$/gm, '<h1 style="font-family:var(--serif);font-size:19px;font-weight:400;margin:16px 0 6px">$1</h1>');
-  // Unordered list items
-  s = s.replace(/^\s*[-*] (.+)$/gm, '<li style="margin:3px 0;padding-left:4px">$1</li>');
-  s = s.replace(/(<li[\s\S]*?<\/li>)/g, '<ul style="padding-left:18px;margin:6px 0">$1</ul>');
-  // Ordered list items
-  s = s.replace(/^\s*\d+\. (.+)$/gm, '<li style="margin:3px 0;padding-left:4px">$1</li>');
-  // Paragraphs
-  s = s.replace(/\n\n/g, '</p><p style="margin-top:10px">');
-  s = s.replace(/\n/g, '<br>');
-  return `<p>${s}</p>`;
-}
+            // Wrap in a timeout to ensure state transitions complete
+            setTimeout(() => {
+                synth.speak(utterance);
+            }, 50);
+        }
 
-function rmWelcome() {
-  const w = document.getElementById('welcome');
-  if (w) w.remove();
-}
+        function unlockAudio() {
+            if (!hasUnlockedAudio) {
+                // Some browsers require a "blank" speak to unlock the audio context
+                const dummy = new SpeechSynthesisUtterance("");
+                synth.speak(dummy);
+                hasUnlockedAudio = true;
+            }
+        }
 
-function addUserMsg(text) {
-  rmWelcome();
-  const ms = document.getElementById('messages');
-  const row = document.createElement('div');
-  row.className = 'mrow user';
-  row.innerHTML = `
-    <div class="av av-user">You</div>
-    <div class="bubble bubble-user">${esc(text)}</div>`;
-  ms.appendChild(row);
-  ms.scrollTop = ms.scrollHeight;
-}
+        startBtn.onclick = () => {
+            unlockAudio();
+            
+            if (isListening || synth.speaking) {
+                synth.cancel();
+                return;
+            }
+            
+            try {
+                recognition.start();
+            } catch(e) {
+                console.warn("Recognition start failed", e);
+            }
+        };
 
-function addTyping() {
-  const ms = document.getElementById('messages');
-  const row = document.createElement('div');
-  row.className = 'mrow';
-  row.id = 'typing-row';
-  row.innerHTML = `
-    <div class="av av-ai">S</div>
-    <div class="typing-bubble">
-      <div class="td"></div><div class="td"></div><div class="td"></div>
-    </div>`;
-  ms.appendChild(row);
-  ms.scrollTop = ms.scrollHeight;
-}
+        recognition.onstart = () => {
+            isListening = true;
+            startBtn.disabled = true;
+            startBtn.innerText = "Listening...";
+            container.classList.add('listening');
+            statusText.innerText = "Listening...";
+            transcriptText.innerText = "Speak now...";
+        };
 
-function rmTyping() {
-  const t = document.getElementById('typing-row');
-  if (t) t.remove();
-}
+        recognition.onresult = (event) => {
+            isListening = false;
+            const result = event.results[0][0].transcript;
+            transcriptText.innerText = `You said: "${result}"`;
+            
+            const reply = getResponse(result);
+            // Delay helps ensure microphone is closed before speaker opens
+            setTimeout(() => {
+                speak(reply);
+            }, 400);
+        };
 
-function addAIMsg(text) {
-  const ms = document.getElementById('messages');
-  const row = document.createElement('div');
-  row.className = 'mrow';
-  row.innerHTML = `
-    <div class="av av-ai">S</div>
-    <div class="bubble bubble-ai">${renderMarkdown(text)}</div>`;
-  ms.appendChild(row);
-  ms.scrollTop = ms.scrollHeight;
-}
+        recognition.onerror = (event) => {
+            isListening = false;
+            startBtn.disabled = false;
+            startBtn.innerText = "Start Listening";
+            container.classList.remove('listening');
+            statusText.innerText = "I didn't catch that.";
+        };
 
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const text = input.value.trim();
-  if (!text) return;
-
-  input.value = '';
-  input.style.height = 'auto';
-  addUserMsg(text);
-  chatHistory.push({ role: 'user', content: text });
-  addTyping();
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: SYSTEM,
-        messages: chatHistory
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    rmTyping();
-    const reply = data.content?.map(b => b.text || '').join('\n').trim() || 'Something went wrong.';
-    chatHistory.push({ role: 'assistant', content: reply });
-    addAIMsg(reply);
-  } catch (e) {
-    rmTyping();
-    addAIMsg(`Sorry, I ran into an error: ${e.message || 'unknown error'}. Please try again.`);
-  }
-}
-</script>
+        recognition.onend = () => {
+            isListening = false;
+            if (!synth.speaking) {
+                startBtn.disabled = false;
+                startBtn.innerText = "Start Listening";
+                container.classList.remove('listening');
+            }
+        };
+    </script>
 </body>
 </html>
