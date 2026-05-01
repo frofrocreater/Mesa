@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MesaVoice</title>
+    <title>Mesa Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        const synth = window.speechSynthesis;
+
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'voice-assistant-v2';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mesa-assistant-v1';
 
         let user = null;
         let longTermMemory = {};
         const apiKey = ""; 
+
+        let isBusy = false;
+        let preferredVoice = null;
+        let audioPlayer = new Audio();
+        let recognition = null;
+        let currentMode = 'hub';
 
         const initAuth = async () => {
             try {
@@ -47,68 +56,65 @@
             await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'memory'), longTermMemory);
         }
 
-        const startBtn = document.getElementById('start-btn');
-        const statusText = document.getElementById('status');
-        const transcriptText = document.getElementById('transcript');
-        const orb = document.getElementById('main-orb');
-        const barsContainer = document.getElementById('bars');
-
-        let isBusy = false;
-        let preferredVoice = null;
-        let audioPlayer = new Audio();
-
         const tracks = [
-            { name: "Lo-Fi Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-            { name: "Chill Synth", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-            { name: "Acoustic Vibes", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+            { name: "Summer Breeze (House)", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+            { name: "Midnight City (Synth)", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+            { name: "The Hero's Journey (Epic)", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+            { name: "Skyline (Pop Instrumental)", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" }
         ];
 
-        for(let i=0; i<12; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.style.animationDelay = `${i * 0.1}s`;
-            barsContainer.appendChild(bar);
-        }
-
-        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-        const synth = window.speechSynthesis;
-
-        function loadVoices() {
-            const voices = synth.getVoices();
-            // Try to find a high quality English voice
-            preferredVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Samantha')) || 
-                             voices.find(v => v.lang.includes('en') && v.name.includes('Google')) ||
-                             voices.find(v => v.lang.startsWith('en'));
-        }
-        
-        // Fix for Chrome/Safari voice loading
-        if (synth.onvoiceschanged !== undefined) {
-            synth.onvoiceschanged = loadVoices;
-        }
-        loadVoices();
-
-        let recognition;
-        if (SpeechRecognition) {
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            recognition.continuous = false;
-        }
-
+        // 50 Clean, Kid-Safe Roasts
         const roastLibrary = [
-            "I do not have the time or the crayons to explain this to you.",
-            "You have the attention span of an ice cream in July.",
-            "I will not have a battle of wits with someone who is unarmed.",
-            "If you see the silly-kid catcher, you’d better hide!",
-            "Why do you look like an envelope with no address on it?",
-            "It appears that your brain cells are not holding hands right now.",
-            "May the chocolate chips in your cookies always turn out to be raisins.",
-            "You are proof that the universe has a sense of humor.",
-            "Where’s your off button?",
-            "I know you are, but what am I?",
-            "You’re the reason they have to put instructions on shampoo bottles.",
+            "I'd explain it to you, but I left my English-to-Toddler dictionary at home.",
+            "You’re the reason the gene pool needs a lifeguard.",
+            "I’m not saying you’re slow, but you’d lose a race to a statue.",
+            "You have the attention span of a goldfish on a sugar rush.",
+            "I’d roast you, but my mom told me not to burn trash.",
+            "You’re like a cloud. When you disappear, it’s a beautiful day.",
+            "I’ve seen better faces on a clock.",
             "Is your name Wi-Fi? Because I’m feeling zero connection.",
-            "I’d roast you, but my mom told me not to burn trash."
+            "Your brain is like a browser—15 tabs open, and 12 of them are frozen.",
+            "You’re as useful as a screen door on a submarine.",
+            "I’d give you a nasty look, but you’ve already got one.",
+            "If laughter is the best medicine, your face must be curing the world.",
+            "You’re like a software update. Every time I see you, I think 'Not now'.",
+            "I’m jealous of all the people who haven't met you yet.",
+            "You have a face for radio and a voice for silent movies.",
+            "Don’t feel bad. A lot of people have no talent.",
+            "I’d battle you in a game of wits, but I don’t like fighting unarmed people.",
+            "You’re the human equivalent of a participation trophy.",
+            "You’re about as bright as a black hole and twice as heavy.",
+            "Your secrets are always safe with me. I never even listen to them.",
+            "I’m not insulting you, I’m describing you.",
+            "You’re like a math word problem. Confusing and unnecessary.",
+            "I don't have the time or the crayons to explain this to you.",
+            "Your style is like a '404 Error'—it just wasn't found.",
+            "You’re as sharp as a marble.",
+            "I’ve seen more life in a bowl of cold soup.",
+            "I’d agree with you, but then we’d both be wrong.",
+            "You’re like a candle in the wind... annoying to keep around.",
+            "You’re proof that even mistakes can be funny.",
+            "I’d roast you, but I’m afraid the smoke would be toxic.",
+            "Your IQ is so low you can't even trip over it.",
+            "You’re the reason aliens won’t talk to us.",
+            "If you were any more basic, you’d be a white crayon.",
+            "You’re like a car with no wheels—you aren't going anywhere.",
+            "I’ve met bread with more personality than you.",
+            "Your jokes are like uncharged phones—no life in them.",
+            "You’re about as helpful as a fork for eating soup.",
+            "I’d tell you to go jump in a lake, but the water doesn't deserve that.",
+            "You’re like a broken pencil—pointless.",
+            "I’m not saying you’re short, but you look like a character from a LEGO set.",
+            "You’re like a speed bump. People only notice you when they’re trying to get somewhere else.",
+            "You have a great personality... for a cactus.",
+            "I’d give you my two cents, but you’d probably just lose them.",
+            "You’re like a rainy Monday morning.",
+            "I don't hate you, I’m just not particularly a fan of your existence.",
+            "You’re like a selfie with the flash on—a bit much.",
+            "You’re as welcome as a sneeze in a library.",
+            "If you were a spice, you’d be flour.",
+            "I’ve heard more sense from a broken radio.",
+            "You’re the human version of a headache."
         ];
 
         const jokeLibrary = [
@@ -116,51 +122,95 @@
             "Why don't scientists trust atoms? Because they make up everything!",
             "What do you call a sleeping bull? A bulldozer!",
             "How does a penguin build its house? Igloos it together!",
-            "Why did the math book look sad? Because it had too many problems.",
             "What do you call a bear with no teeth? A gummy bear!",
             "Why did the computer go to the doctor? Because it had a virus!"
         ];
+
+        function loadVoices() {
+            const voices = synth.getVoices();
+            preferredVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Samantha')) || 
+                             voices.find(v => v.lang.includes('en') && v.name.includes('Google')) ||
+                             voices.find(v => v.lang.startsWith('en'));
+        }
+        
+        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function initRecognition() {
+            if (!SpeechRecognition) return null;
+            const rec = new SpeechRecognition();
+            rec.lang = 'en-US';
+            rec.interimResults = false;
+            rec.continuous = false;
+
+            rec.onstart = () => {
+                isBusy = true;
+                document.getElementById('main-orb').classList.add('active');
+                document.getElementById('status').innerText = "Mesa is listening...";
+            };
+
+            rec.onresult = async (event) => {
+                const input = event.results[0][0].transcript;
+                processInput(input);
+            };
+
+            rec.onerror = (event) => {
+                isBusy = false;
+                document.getElementById('main-orb').classList.remove('active');
+                document.getElementById('status').innerText = "Mesa didn't catch that. Try again.";
+            };
+
+            rec.onend = () => {
+                if (!isBusy) document.getElementById('main-orb').classList.remove('active');
+            };
+
+            return rec;
+        }
 
         function playActualMusic() {
             const track = tracks[Math.floor(Math.random() * tracks.length)];
             audioPlayer.src = track.url;
             audioPlayer.crossOrigin = "anonymous";
-            audioPlayer.play().catch(e => console.error("Playback failed", e));
-            return `Sure! Playing ${track.name} for you.`;
+            audioPlayer.play().catch(e => {
+                document.getElementById('status').innerText = "Music blocked. Tap to fix.";
+            });
+            return `I'm playing ${track.name} for you now. Enjoy!`;
         }
 
         function stopMusic() {
             audioPlayer.pause();
-            return "Music stopped.";
+            return "I've stopped the music.";
         }
 
         function getOfflineReply(input) {
-            const cmd = input.toLowerCase();
-            if (cmd.includes("time")) {
-                return `The time is ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`;
-            }
-            if (cmd.includes("roast") || cmd.includes("burn") || cmd.includes("battle")) {
-                return roastLibrary[Math.floor(Math.random() * roastLibrary.length)];
-            }
-            if (cmd.includes("joke")) {
-                return jokeLibrary[Math.floor(Math.random() * jokeLibrary.length)];
-            }
-            if (cmd.includes("stop") && cmd.includes("music")) {
-                return stopMusic();
-            }
-            if (cmd.includes("play music") || (cmd.includes("play") && cmd.includes("song"))) {
+            const cmd = input.toLowerCase().trim();
+            
+            // MUSIC FIX: Trigger if the word "music" appears anywhere
+            if (cmd === "music" || cmd.includes("play music") || cmd.includes("play a song") || cmd.includes("play some music")) {
                 return playActualMusic();
             }
-            if (cmd.includes("hello") || cmd.includes("hi ")) {
-                return longTermMemory.name ? `Hello ${longTermMemory.name}, ready for some music or a joke?` : "Hello! How can I help you today?";
+            if (cmd.includes("stop") && cmd.includes("music")) return stopMusic();
+
+            if (cmd.includes("time")) return `The current time is ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`;
+            if (cmd.includes("joke")) return jokeLibrary[Math.floor(Math.random() * jokeLibrary.length)];
+            
+            // ROAST TRIGGER
+            if (cmd.includes("roast") || cmd.includes("burn") || cmd.includes("insult")) {
+                return roastLibrary[Math.floor(Math.random() * roastLibrary.length)];
             }
+            
+            if (cmd === "mesa" || cmd === "hey mesa") return "I'm here! What can I do for you?";
+            if (cmd.includes("how are you")) return "I'm doing great! Just hanging out in the cloud, ready to help you.";
+            if (cmd.includes("what is your name") || cmd.includes("who are you")) return "My name is Mesa, your personal assistant.";
+            if (cmd.includes("hello") || cmd.includes("hi")) return longTermMemory.name ? `Hi ${longTermMemory.name}! How's your day going?` : "Hello! I'm Mesa. What's on your mind?";
+            
             return null;
         }
 
         async function fetchAIResponse(query) {
-            if (!apiKey) return { reply: "I'm offline. I can give you a joke, a roast, the time, or play some music!" };
+            if (!apiKey) return { reply: "I'm in local mode. Ask for a joke, roast, music, or the time!" };
             const memoryContext = JSON.stringify(longTermMemory);
-            const systemPrompt = `You are a high-tech assistant for a minor. Stay safe and clean. Context: ${memoryContext}. Return ONLY JSON: {"reply": "...", "memoryUpdate": null}.`;
+            const systemPrompt = `You are Mesa, a friendly, safe, and clever assistant for a minor. Your name is Mesa. Use Google Search for facts. Context: ${memoryContext}. Return ONLY JSON: {"reply": "...", "memoryUpdate": null}.`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -179,7 +229,30 @@
                 if (parsed.memoryUpdate) await updateMemory(parsed.memoryUpdate);
                 return parsed;
             } catch (err) {
-                return { reply: "I'm having trouble connecting, but I can still tell jokes!" };
+                return { reply: "I'm having a little trouble with my connection, but I'm still here to talk locally!" };
+            }
+        }
+
+        async function processInput(input) {
+            document.getElementById('transcript').innerText = `"${input}"`;
+            
+            const offlineReply = getOfflineReply(input);
+            if (offlineReply) {
+                speak(offlineReply);
+                if (currentMode === 'chat') {
+                    addChatMessage('You', input);
+                    addChatMessage('Mesa', offlineReply);
+                }
+                return;
+            }
+
+            document.getElementById('status').innerText = "Mesa is thinking...";
+            const aiResult = await fetchAIResponse(input);
+            speak(aiResult.reply);
+            
+            if (currentMode === 'chat') {
+                addChatMessage('You', input);
+                addChatMessage('Mesa', aiResult.reply);
             }
         }
 
@@ -190,101 +263,155 @@
             
             utterance.onstart = () => {
                 isBusy = true;
-                orb.classList.add('active');
-                statusText.innerText = text;
+                document.getElementById('main-orb').classList.add('active');
+                document.getElementById('status').innerText = text;
             };
             utterance.onend = () => {
                 isBusy = false;
-                orb.classList.remove('active');
-                statusText.innerText = "Tap to talk";
+                document.getElementById('main-orb').classList.remove('active');
+                if (currentMode === 'voice') document.getElementById('status').innerText = "Tap to talk";
             };
             synth.speak(utterance);
         }
 
-        window.handleStart = () => {
-            if (isBusy) return;
-            
-            // Critical: Users MUST interact to allow audio/mic on deployed sites
-            if (!recognition) {
-                statusText.innerText = "Speech recognition not supported in this browser.";
-                return;
-            }
+        window.setMode = (mode) => {
+            currentMode = mode;
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${mode}-screen`).classList.remove('hidden');
+        };
 
+        window.handleVoiceStart = async () => {
+            if (isBusy) return;
+            if (!recognition) recognition = initRecognition();
             try {
+                synth.speak(new SpeechSynthesisUtterance(""));
                 recognition.start();
-                // Play a tiny silent sound to wake up the audio context
-                const silent = new SpeechSynthesisUtterance("");
-                synth.speak(silent);
             } catch (e) {
-                console.error(e);
-                statusText.innerText = "Microphone error. Please check site permissions.";
+                try { recognition.stop(); } catch(err) {}
             }
         };
 
-        if (recognition) {
-            recognition.onstart = () => {
-                isBusy = true;
-                orb.classList.add('active');
-                statusText.innerText = "Listening...";
-            };
+        window.sendChat = async () => {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            processInput(text);
+        };
 
-            recognition.onresult = async (event) => {
-                const input = event.results[0][0].transcript;
-                transcriptText.innerText = `"${input}"`;
-                
-                const offlineReply = getOfflineReply(input);
-                if (offlineReply) {
-                    speak(offlineReply);
-                    return;
-                }
-
-                statusText.innerText = "Thinking...";
-                const aiResult = await fetchAIResponse(input);
-                speak(aiResult.reply);
-            };
-
-            recognition.onerror = (event) => {
-                isBusy = false;
-                orb.classList.remove('active');
-                if (event.error === 'not-allowed') {
-                    statusText.innerText = "Microphone access denied. Enable it in your browser settings.";
-                } else {
-                    statusText.innerText = "I didn't quite hear you.";
-                }
-            };
+        function addChatMessage(sender, text) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `mb-4 p-3 rounded-2xl max-w-[85%] ${sender === 'You' ? 'ml-auto bg-blue-600 rounded-tr-none' : 'mr-auto bg-zinc-800 rounded-tl-none border border-zinc-700'}`;
+            div.innerHTML = `<span class="text-[10px] uppercase font-bold opacity-50 block mb-1">${sender}</span>${text}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
 
         window.onload = () => {
             loadVoices();
-            if (!SpeechRecognition) {
-                statusText.innerText = "Voice commands unavailable in this browser.";
-                startBtn.style.display = "none";
+            const barsContainer = document.getElementById('bars');
+            for(let i=0; i<12; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.animationDelay = `${i * 0.1}s`;
+                barsContainer.appendChild(bar);
             }
         };
     </script>
     <style>
-        body { background-color: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .orb-container { position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; }
-        .orb { position: absolute; width: 140px; height: 140px; border-radius: 50%; background: radial-gradient(circle, #00d2ff, #9d50bb, #3a7bd5); filter: blur(45px); opacity: 0.5; transition: all 0.5s ease; }
-        .active .orb { animation: pulse 2s infinite ease-in-out; opacity: 0.8; filter: blur(30px); width: 180px; height: 180px; }
-        @keyframes pulse { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.1); filter: hue-rotate(90deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
-        .visualizer { display: flex; align-items: center; gap: 5px; height: 60px; z-index: 10; }
-        .bar { width: 4px; height: 10px; background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        body { background-color: #050505; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; height: 100vh; overflow: hidden; }
+        .screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; position: absolute; top: 0; left: 0; padding: 24px; transition: opacity 0.3s; }
+        .hidden { display: none !important; opacity: 0; }
+        .orb-container { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
+        .orb { position: absolute; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, #4f46e5, #9333ea, #ec4899); filter: blur(40px); opacity: 0.4; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .active .orb { animation: pulse 2.5s infinite ease-in-out; opacity: 0.8; filter: blur(30px); width: 160px; height: 160px; }
+        @keyframes pulse { 0% { transform: scale(1); filter: hue-rotate(0deg); } 50% { transform: scale(1.15); filter: hue-rotate(45deg); } 100% { transform: scale(1); filter: hue-rotate(0deg); } }
+        .visualizer { display: flex; align-items: center; gap: 4px; height: 50px; z-index: 10; }
+        .bar { width: 3px; height: 8px; background: rgba(255, 255, 255, 0.15); border-radius: 4px; transition: 0.3s; }
         .active .bar { background: #fff; animation: bounce 0.6s infinite alternate; }
-        @keyframes bounce { from { height: 10px; } to { height: 45px; } }
-        .status-text { font-size: 1.3rem; margin-top: 2rem; text-align: center; max-width: 85%; line-height: 1.5; min-height: 3.5em; }
-        .transcript { color: rgba(255,255,255,0.4); font-size: 0.95rem; margin-top: 0.5rem; }
-        .btn-assist { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 16px 40px; border-radius: 999px; margin-top: 2rem; cursor: pointer; backdrop-filter: blur(20px); color: white; transition: all 0.3s; }
-        .btn-assist:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+        @keyframes bounce { from { height: 8px; } to { height: 40px; } }
+        .btn-main { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 24px; border-radius: 24px; width: 100%; max-width: 340px; margin: 10px; text-align: left; cursor: pointer; transition: 0.3s; }
+        .btn-main:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); transform: translateY(-4px); }
+        .btn-back { position: absolute; top: 30px; left: 30px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; z-index: 100; transition: 0.2s; }
+        .btn-back:hover { background: rgba(255,255,255,0.2); }
+        #chat-messages { width: 100%; max-width: 500px; height: 55vh; overflow-y: auto; scrollbar-width: none; }
+        #chat-messages::-webkit-scrollbar { display: none; }
+        .news-card { background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); padding: 24px; border-radius: 24px; margin-bottom: 20px; width: 100%; max-width: 500px; border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
-    <div class="orb-container" id="main-orb">
-        <div class="orb"></div>
-        <div class="visualizer" id="bars"></div>
+
+    <div id="hub-screen" class="screen">
+        <div class="orb-container mb-12">
+            <div class="orb"></div>
+        </div>
+        <h1 class="text-4xl font-bold mb-10 tracking-tight">Meet Mesa.</h1>
+        <div class="btn-main flex items-center gap-4" onclick="setMode('voice')">
+            <div class="bg-white/10 p-3 rounded-full">🎙️</div>
+            <div>
+                <h2 class="text-xl font-bold">Speak</h2>
+                <p class="text-sm opacity-50">Have a voice conversation</p>
+            </div>
+        </div>
+        <div class="btn-main flex items-center gap-4" onclick="setMode('chat')">
+            <div class="bg-white/10 p-3 rounded-full">💬</div>
+            <div>
+                <h2 class="text-xl font-bold">Chat</h2>
+                <p class="text-sm opacity-50">Type your questions</p>
+            </div>
+        </div>
+        <div class="btn-main flex items-center gap-4" onclick="setMode('news')">
+            <div class="bg-white/10 p-3 rounded-full">✨</div>
+            <div>
+                <h2 class="text-xl font-bold">New</h2>
+                <p class="text-sm opacity-50">See what's changed</p>
+            </div>
+        </div>
     </div>
-    <div class="status-text" id="status">Tap to speak</div>
-    <div class="transcript" id="transcript">Ensure your site is on HTTPS for voice!</div>
-    <button class="btn-assist" onclick="handleStart()" id="start-btn">Start Listening</button>
+
+    <div id="voice-screen" class="screen hidden">
+        <button class="btn-back" onclick="setMode('hub')">← Back</button>
+        <div class="orb-container" id="main-orb">
+            <div class="orb"></div>
+            <div class="visualizer" id="bars"></div>
+        </div>
+        <div class="text-2xl mt-16 text-center max-w-[85%] font-medium leading-relaxed" id="status">Tap to speak to Mesa</div>
+        <div class="text-sm opacity-30 mt-4 italic" id="transcript">"Play some music"</div>
+        <button class="bg-indigo-600 hover:bg-indigo-500 text-white px-14 py-5 rounded-full mt-16 font-bold shadow-lg transition-all" onclick="handleVoiceStart()">Start Talking</button>
+    </div>
+
+    <div id="chat-screen" class="screen hidden">
+        <button class="btn-back" onclick="setMode('hub')">← Back</button>
+        <div id="chat-messages" class="mb-6 px-2"></div>
+        <div class="flex gap-3 w-full max-w-[500px] bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800">
+            <input type="text" id="chat-input" class="bg-transparent text-white rounded-xl p-3 flex-1 outline-none" placeholder="Message Mesa..." onkeydown="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()" class="bg-white text-black font-bold p-3 rounded-xl px-8 transition-transform active:scale-95">Send</button>
+        </div>
+    </div>
+
+    <div id="news-screen" class="screen hidden overflow-y-auto block pt-28 pb-16">
+        <button class="btn-back" onclick="setMode('hub')">← Back</button>
+        <h1 class="text-4xl font-bold text-center mb-12">Latest from Mesa</h1>
+        
+        <div class="flex flex-col items-center px-4">
+            <div class="news-card">
+                <span class="bg-red-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Update</span>
+                <h3 class="text-2xl font-bold mt-3">50 New Roasts</h3>
+                <p class="text-md opacity-60 mt-2 leading-relaxed">Mesa is now a roast master! Ask me to "Roast me" for 50 different hilarious, kid-safe burns.</p>
+            </div>
+            <div class="news-card">
+                <span class="bg-indigo-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Fixed</span>
+                <h3 class="text-2xl font-bold mt-3">Better Music Control</h3>
+                <p class="text-md opacity-60 mt-2 leading-relaxed">The music player is now much smarter. Just say or type "music" and I'll know what to do.</p>
+            </div>
+            <div class="news-card">
+                <span class="bg-pink-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Audio</span>
+                <h3 class="text-2xl font-bold mt-3">High Quality Songs</h3>
+                <p class="text-md opacity-60 mt-2 leading-relaxed">Pop, House, and Epic Cinematic tracks are all ready to stream.</p>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
