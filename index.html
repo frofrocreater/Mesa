@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siri-Style Assistant</title>
+    <title>MesaVoice</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -21,11 +21,13 @@
         const apiKey = ""; 
 
         const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) { console.error("Auth failed", e); }
         };
         initAuth();
 
@@ -55,7 +57,6 @@
         let preferredVoice = null;
         let audioPlayer = new Audio();
 
-        // Music Tracks (Safe, Royalty Free)
         const tracks = [
             { name: "Lo-Fi Beats", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
             { name: "Chill Synth", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
@@ -69,51 +70,43 @@
             barsContainer.appendChild(bar);
         }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
         const synth = window.speechSynthesis;
 
         function loadVoices() {
             const voices = synth.getVoices();
-            preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English')));
-            if (!preferredVoice && voices.length > 0) preferredVoice = voices[0];
+            // Try to find a high quality English voice
+            preferredVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Samantha')) || 
+                             voices.find(v => v.lang.includes('en') && v.name.includes('Google')) ||
+                             voices.find(v => v.lang.startsWith('en'));
         }
-        if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+        
+        // Fix for Chrome/Safari voice loading
+        if (synth.onvoiceschanged !== undefined) {
+            synth.onvoiceschanged = loadVoices;
+        }
         loadVoices();
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.continuous = false;
+        }
 
         const roastLibrary = [
             "I do not have the time or the crayons to explain this to you.",
             "You have the attention span of an ice cream in July.",
             "I will not have a battle of wits with someone who is unarmed.",
-            "This looks like something I would draw with my left hand.",
             "If you see the silly-kid catcher, you’d better hide!",
             "Why do you look like an envelope with no address on it?",
             "It appears that your brain cells are not holding hands right now.",
-            "You were a slippery baby.",
             "May the chocolate chips in your cookies always turn out to be raisins.",
-            "You have your entire life to be a knucklehead. You can take today off.",
-            "Who ate your bowl of sunshine this morning, thundercloud?",
             "You are proof that the universe has a sense of humor.",
             "Where’s your off button?",
-            "Sometimes it’s better to keep your mouth shut and let people think you’re silly than open it and confirm their suspicions.",
-            "You must have gotten your brain from your other parent.",
-            "You changed your mind? Does this one work any better?",
-            "I’m surprised and pleased—but a little more surprised than pleased.",
-            "Sorry, it’s hereditary.",
-            "Don’t be a screen door on a submarine.",
             "I know you are, but what am I?",
             "You’re the reason they have to put instructions on shampoo bottles.",
-            "You’re about as useful as a knitted umbrella.",
-            "If laughter is the best medicine, your face must be curing the world.",
-            "I’m multitasking: I can listen to you and ignore you at the same time.",
-            "If I had a dollar for every smart thing you said, I’d be broke.",
-            "I’d explain it to you, but I left my dictionary of simple words at home.",
-            "You bring so much joy to a room... every time you leave it.",
-            "You’re like a software update. Whenever I see you, I think, 'Not now'.",
-            "I’m not an astronomer, but I’m pretty sure the world doesn’t revolve around you.",
             "Is your name Wi-Fi? Because I’m feeling zero connection.",
             "I’d roast you, but my mom told me not to burn trash."
         ];
@@ -125,16 +118,14 @@
             "How does a penguin build its house? Igloos it together!",
             "Why did the math book look sad? Because it had too many problems.",
             "What do you call a bear with no teeth? A gummy bear!",
-            "Why can't you give Elsa a balloon? Because she will let it go!",
-            "What did one plate say to the other? Dinner is on me!",
-            "Why did the computer go to the doctor? Because it had a virus!",
-            "What do you call a fly without wings? A walk!"
+            "Why did the computer go to the doctor? Because it had a virus!"
         ];
 
         function playActualMusic() {
             const track = tracks[Math.floor(Math.random() * tracks.length)];
             audioPlayer.src = track.url;
-            audioPlayer.play();
+            audioPlayer.crossOrigin = "anonymous";
+            audioPlayer.play().catch(e => console.error("Playback failed", e));
             return `Sure! Playing ${track.name} for you.`;
         }
 
@@ -160,9 +151,6 @@
             if (cmd.includes("play music") || (cmd.includes("play") && cmd.includes("song"))) {
                 return playActualMusic();
             }
-            if (cmd.includes("weather") && !apiKey) {
-                return "I'm in offline mode, but it looks like a clear day for a joke!";
-            }
             if (cmd.includes("hello") || cmd.includes("hi ")) {
                 return longTermMemory.name ? `Hello ${longTermMemory.name}, ready for some music or a joke?` : "Hello! How can I help you today?";
             }
@@ -171,14 +159,8 @@
 
         async function fetchAIResponse(query) {
             if (!apiKey) return { reply: "I'm offline. I can give you a joke, a roast, the time, or play some music!" };
-
             const memoryContext = JSON.stringify(longTermMemory);
-            const systemPrompt = `You are a high-tech assistant for a minor. 
-            CONNECTED: Use Google Search for facts/weather.
-            MUSIC/JOKES: If asked to play music, say 'Playing music now'. If asked for a joke, tell a funny one.
-            MEMORY: Remember: ${memoryContext}. 
-            ROASTS: Use safe, funny ones only.
-            RESPONSE: Return ONLY JSON: {"reply": "...", "memoryUpdate": {"key": "val"} or null}.`;
+            const systemPrompt = `You are a high-tech assistant for a minor. Stay safe and clean. Context: ${memoryContext}. Return ONLY JSON: {"reply": "...", "memoryUpdate": null}.`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -192,15 +174,12 @@
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
-
-                if (!response.ok) throw new Error("API Offline");
                 const data = await response.json();
                 const parsed = JSON.parse(data.candidates[0].content.parts[0].text);
-                
                 if (parsed.memoryUpdate) await updateMemory(parsed.memoryUpdate);
                 return parsed;
             } catch (err) {
-                return { reply: "Connection lost, but I can still tell jokes locally!" };
+                return { reply: "I'm having trouble connecting, but I can still tell jokes!" };
             }
         }
 
@@ -208,6 +187,7 @@
             synth.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             if (preferredVoice) utterance.voice = preferredVoice;
+            
             utterance.onstart = () => {
                 isBusy = true;
                 orb.classList.add('active');
@@ -223,38 +203,64 @@
 
         window.handleStart = () => {
             if (isBusy) return;
-            synth.speak(new SpeechSynthesisUtterance(""));
-            recognition.start();
-        };
-
-        recognition.onstart = () => {
-            isBusy = true;
-            orb.classList.add('active');
-            statusText.innerText = "Listening...";
-        };
-
-        recognition.onresult = async (event) => {
-            const input = event.results[0][0].transcript;
-            transcriptText.innerText = `"${input}"`;
             
-            const offlineReply = getOfflineReply(input);
-            if (offlineReply) {
-                speak(offlineReply);
+            // Critical: Users MUST interact to allow audio/mic on deployed sites
+            if (!recognition) {
+                statusText.innerText = "Speech recognition not supported in this browser.";
                 return;
             }
 
-            statusText.innerText = "Thinking...";
-            const aiResult = await fetchAIResponse(input);
-            speak(aiResult.reply);
+            try {
+                recognition.start();
+                // Play a tiny silent sound to wake up the audio context
+                const silent = new SpeechSynthesisUtterance("");
+                synth.speak(silent);
+            } catch (e) {
+                console.error(e);
+                statusText.innerText = "Microphone error. Please check site permissions.";
+            }
         };
 
-        recognition.onerror = () => {
-            isBusy = false;
-            orb.classList.remove('active');
-            statusText.innerText = "Try speaking again.";
-        };
+        if (recognition) {
+            recognition.onstart = () => {
+                isBusy = true;
+                orb.classList.add('active');
+                statusText.innerText = "Listening...";
+            };
 
-        window.onload = loadVoices;
+            recognition.onresult = async (event) => {
+                const input = event.results[0][0].transcript;
+                transcriptText.innerText = `"${input}"`;
+                
+                const offlineReply = getOfflineReply(input);
+                if (offlineReply) {
+                    speak(offlineReply);
+                    return;
+                }
+
+                statusText.innerText = "Thinking...";
+                const aiResult = await fetchAIResponse(input);
+                speak(aiResult.reply);
+            };
+
+            recognition.onerror = (event) => {
+                isBusy = false;
+                orb.classList.remove('active');
+                if (event.error === 'not-allowed') {
+                    statusText.innerText = "Microphone access denied. Enable it in your browser settings.";
+                } else {
+                    statusText.innerText = "I didn't quite hear you.";
+                }
+            };
+        }
+
+        window.onload = () => {
+            loadVoices();
+            if (!SpeechRecognition) {
+                statusText.innerText = "Voice commands unavailable in this browser.";
+                startBtn.style.display = "none";
+            }
+        };
     </script>
     <style>
         body { background-color: #000; color: white; font-family: -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
@@ -278,7 +284,7 @@
         <div class="visualizer" id="bars"></div>
     </div>
     <div class="status-text" id="status">Tap to speak</div>
-    <div class="transcript" id="transcript">Ask me for a joke or to play music!</div>
+    <div class="transcript" id="transcript">Ensure your site is on HTTPS for voice!</div>
     <button class="btn-assist" onclick="handleStart()" id="start-btn">Start Listening</button>
 </body>
 </html>
