@@ -13,15 +13,45 @@
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
         const synth = window.speechSynthesis;
 
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        // --- GITHUB HOSTING FIX: SAFE DEFAULTS ---
+        // We check if the environment variables exist; if not, we use empty strings to prevent crashes.
+        const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        const firebaseConfig = JSON.parse(firebaseConfigStr);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'mesa-assistant-v1';
-
+        
+        let db = null;
+        let auth = null;
         let user = null;
         let longTermMemory = {};
         const apiKey = ""; 
+
+        // Only initialize Firebase if a config is actually present
+        if (firebaseConfig.apiKey) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) { console.error("Auth failed", e); }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, async (u) => {
+                user = u;
+                if (user && db) {
+                    const memoryDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'memory'));
+                    if (memoryDoc.exists()) {
+                        longTermMemory = memoryDoc.data();
+                    }
+                }
+            });
+        }
 
         let isBusy = false;
         let preferredVoice = null;
@@ -29,29 +59,8 @@
         let recognition = null;
         let currentMode = 'hub';
 
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) { console.error("Auth failed", e); }
-        };
-        initAuth();
-
-        onAuthStateChanged(auth, async (u) => {
-            user = u;
-            if (user) {
-                const memoryDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'memory'));
-                if (memoryDoc.exists()) {
-                    longTermMemory = memoryDoc.data();
-                }
-            }
-        });
-
         async function updateMemory(newData) {
-            if (!user) return;
+            if (!user || !db) return;
             longTermMemory = { ...longTermMemory, ...newData };
             await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'memory'), longTermMemory);
         }
@@ -63,7 +72,6 @@
             { name: "Skyline (Pop Instrumental)", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" }
         ];
 
-        // 50 Clean, Kid-Safe Roasts
         const roastLibrary = [
             "I'd explain it to you, but I left my English-to-Toddler dictionary at home.",
             "You’re the reason the gene pool needs a lifeguard.",
@@ -185,32 +193,26 @@
         function getOfflineReply(input) {
             const cmd = input.toLowerCase().trim();
             
-            // MUSIC FIX: Trigger if the word "music" appears anywhere
             if (cmd === "music" || cmd.includes("play music") || cmd.includes("play a song") || cmd.includes("play some music")) {
                 return playActualMusic();
             }
             if (cmd.includes("stop") && cmd.includes("music")) return stopMusic();
-
             if (cmd.includes("time")) return `The current time is ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`;
             if (cmd.includes("joke")) return jokeLibrary[Math.floor(Math.random() * jokeLibrary.length)];
-            
-            // ROAST TRIGGER
             if (cmd.includes("roast") || cmd.includes("burn") || cmd.includes("insult")) {
                 return roastLibrary[Math.floor(Math.random() * roastLibrary.length)];
             }
-            
             if (cmd === "mesa" || cmd === "hey mesa") return "I'm here! What can I do for you?";
             if (cmd.includes("how are you")) return "I'm doing great! Just hanging out in the cloud, ready to help you.";
             if (cmd.includes("what is your name") || cmd.includes("who are you")) return "My name is Mesa, your personal assistant.";
             if (cmd.includes("hello") || cmd.includes("hi")) return longTermMemory.name ? `Hi ${longTermMemory.name}! How's your day going?` : "Hello! I'm Mesa. What's on your mind?";
-            
             return null;
         }
 
         async function fetchAIResponse(query) {
             if (!apiKey) return { reply: "I'm in local mode. Ask for a joke, roast, music, or the time!" };
             const memoryContext = JSON.stringify(longTermMemory);
-            const systemPrompt = `You are Mesa, a friendly, safe, and clever assistant for a minor. Your name is Mesa. Use Google Search for facts. Context: ${memoryContext}. Return ONLY JSON: {"reply": "...", "memoryUpdate": null}.`;
+            const systemPrompt = `You are Mesa, a friendly, safe, and clever assistant for a minor. Your name is Mesa. Context: ${memoryContext}. Return ONLY JSON: {"reply": "...", "memoryUpdate": null}.`;
 
             try {
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -235,7 +237,6 @@
 
         async function processInput(input) {
             document.getElementById('transcript').innerText = `"${input}"`;
-            
             const offlineReply = getOfflineReply(input);
             if (offlineReply) {
                 speak(offlineReply);
@@ -245,11 +246,9 @@
                 }
                 return;
             }
-
             document.getElementById('status').innerText = "Mesa is thinking...";
             const aiResult = await fetchAIResponse(input);
             speak(aiResult.reply);
-            
             if (currentMode === 'chat') {
                 addChatMessage('You', input);
                 addChatMessage('Mesa', aiResult.reply);
@@ -260,7 +259,6 @@
             synth.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             if (preferredVoice) utterance.voice = preferredVoice;
-            
             utterance.onstart = () => {
                 isBusy = true;
                 document.getElementById('main-orb').classList.add('active');
@@ -274,6 +272,7 @@
             synth.speak(utterance);
         }
 
+        // Global Window functions for the buttons
         window.setMode = (mode) => {
             currentMode = mode;
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -311,11 +310,13 @@
         window.onload = () => {
             loadVoices();
             const barsContainer = document.getElementById('bars');
-            for(let i=0; i<12; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                bar.style.animationDelay = `${i * 0.1}s`;
-                barsContainer.appendChild(bar);
+            if (barsContainer) {
+                for(let i=0; i<12; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    bar.style.animationDelay = `${i * 0.1}s`;
+                    barsContainer.appendChild(bar);
+                }
             }
         };
     </script>
@@ -393,22 +394,16 @@
     <div id="news-screen" class="screen hidden overflow-y-auto block pt-28 pb-16">
         <button class="btn-back" onclick="setMode('hub')">← Back</button>
         <h1 class="text-4xl font-bold text-center mb-12">Latest from Mesa</h1>
-        
         <div class="flex flex-col items-center px-4">
+            <div class="news-card">
+                <span class="bg-green-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Hosting Fix</span>
+                <h3 class="text-2xl font-bold mt-3">GitHub Pages Compatible</h3>
+                <p class="text-md opacity-60 mt-2 leading-relaxed">Mesa now runs perfectly on external hosts by checking for connection settings before starting.</p>
+            </div>
             <div class="news-card">
                 <span class="bg-red-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Update</span>
                 <h3 class="text-2xl font-bold mt-3">50 New Roasts</h3>
-                <p class="text-md opacity-60 mt-2 leading-relaxed">Mesa is now a roast master! Ask me to "Roast me" for 50 different hilarious, kid-safe burns.</p>
-            </div>
-            <div class="news-card">
-                <span class="bg-indigo-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Fixed</span>
-                <h3 class="text-2xl font-bold mt-3">Better Music Control</h3>
-                <p class="text-md opacity-60 mt-2 leading-relaxed">The music player is now much smarter. Just say or type "music" and I'll know what to do.</p>
-            </div>
-            <div class="news-card">
-                <span class="bg-pink-600 text-[10px] px-2 py-1 rounded-full uppercase font-black tracking-widest">Audio</span>
-                <h3 class="text-2xl font-bold mt-3">High Quality Songs</h3>
-                <p class="text-md opacity-60 mt-2 leading-relaxed">Pop, House, and Epic Cinematic tracks are all ready to stream.</p>
+                <p class="text-md opacity-60 mt-2 leading-relaxed">Mesa is a roast master! Ask me to "Roast me" for 50 different hilarious, kid-safe burns.</p>
             </div>
         </div>
     </div>
